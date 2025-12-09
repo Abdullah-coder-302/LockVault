@@ -9,19 +9,27 @@ import { v4 as uuidv4 } from 'uuid';
 function App() {
   // 1. Initialize State from Local Storage (Safe check included)
   const [Passwords, setPasswords] = useState(() => {
+    if (typeof window === "undefined") return []; // prevent error on load
+
     try {
-      const saved = localStorage.getItem("passwords");
+      const saved = window.localStorage.getItem("passwords");
       return saved ? JSON.parse(saved) : [];
     } catch (err) {
+      console.error("LocalStorage error:", err);
       return [];
     }
   });
-
   const [showPassword, setShowPassword] = useState(false);
 
   // 2. Automatically save to Local Storage whenever 'Passwords' changes
   useEffect(() => {
-    localStorage.setItem("passwords", JSON.stringify(Passwords));
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("passwords", JSON.stringify(Passwords));
+      } catch (e) {
+        console.error("LocalStorage save error:", e);
+      }
+    }
   }, [Passwords]);
 
   const togglePasswordVisibility = () => {
@@ -37,13 +45,13 @@ function App() {
     if (isSameUrlAndPassword) {
       setError("same", { message: "Same Url And Name Combination Already Exists!" });
       handleToast("⚠️ Same Url And Name Combination Already Exists!");
-      return; 
+      return;
     }
 
     // Add new password with a unique ID (logic replaced fetch)
     const newEntry = { ...data, id: uuidv4() };
     setPasswords([...Passwords, newEntry]);
-    
+
     handleToast("Password Saved!");
     reset(); // Clear form
   };
@@ -56,14 +64,14 @@ function App() {
       navigator.clipboard.writeText(password);
     }
     setisToast({ value: true, message });
-    
+
     // Safety check for ref
     if (toastbox.current) {
-        toastbox.current.style.display = "flex";
-        setTimeout(() => {
-            setisToast({ value: false, message: "" });
-            if (toastbox.current) toastbox.current.style.display = "none";
-        }, 3000);
+      toastbox.current.style.display = "flex";
+      setTimeout(() => {
+        setisToast({ value: false, message: "" });
+        if (toastbox.current) toastbox.current.style.display = "none";
+      }, 3000);
     }
   }
 
